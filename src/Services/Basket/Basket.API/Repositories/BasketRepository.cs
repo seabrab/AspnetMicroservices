@@ -1,6 +1,6 @@
-﻿using Basket.API.Data.Interfaces;
-using Basket.API.Entities;
-using Basket.API.Repositories.Interfaces;
+﻿using Basket.API.Entities;
+using Basket.API.Repositories;
+using Microsoft.Extensions.Caching.Distributed;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -11,45 +11,34 @@ namespace Basket.API.Repositories
 {
     public class BasketRepository : IBasketRepository
     {
-        private readonly IBasketContext _basketContext;
-        public BasketRepository(IBasketContext basketContext)
+        private readonly IDistributedCache _redisDistributedCache;
+
+        public BasketRepository(IDistributedCache distributedCache)
         {
-            _basketContext = basketContext;
+            _redisDistributedCache = distributedCache;
         }
 
-        public async Task<BasketCart> GetBasket(string userName)
+
+        public async Task<ShoppingCart> GetBasket(string userName)
         {
-            var basket = await _basketContext
-                .Redis
-                .StringGetAsync(userName);
+            var basket = await _redisDistributedCache.GetStringAsync(userName);
 
-            if (basket.IsNullOrEmpty)
-            {
+            if (string.IsNullOrEmpty(basket))
                 return null;
-            }
 
-            return JsonConvert.DeserializeObject<BasketCart>(basket);
+            return JsonConvert.DeserializeObject<ShoppingCart>(basket);
             
         }
 
-        public async Task<BasketCart> UpdateBasket(BasketCart basket)
+        public async Task<ShoppingCart> UpdateBasket(ShoppingCart basket)
         {
-            var update = await _basketContext
-                .Redis
-                .StringSetAsync(basket.UserName, JsonConvert.SerializeObject(basket));
-
-            if(!update)
-            {
-                return null;
-            }
-
-            return await GetBasket(basket.UserName);
+             await _redisDistributedCache.SetStringAsync(basket.UserName, JsonConvert.SerializeObject(basket));
+            return await GetBasket(basket.UserName);    
         }
-        public async Task<bool> DeleteBasket(string userName)
+        public async Task DeleteBasket(string userName)
         {
-            return await _basketContext
-                .Redis
-                .KeyDeleteAsync(userName);
+            await _redisDistributedCache.RemoveAsync(userName);
+                
         }
     }
 }

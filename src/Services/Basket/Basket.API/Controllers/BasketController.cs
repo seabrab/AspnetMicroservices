@@ -1,6 +1,6 @@
 ﻿using AutoMapper;
 using Basket.API.Entities;
-using Basket.API.Repositories.Interfaces;
+using Basket.API.Repositories;
 //using EventBusRabbitMQ.Events;
 //using EventBusRabbitMQ.Producer;
 //using EventBusRabbitMQ.Common;
@@ -26,41 +26,40 @@ namespace Basket.API.Controllers
             //_eventBus = eventBus;
         }
 
-        [HttpGet]
-        [ProducesResponseType(typeof(BasketCart), (int)HttpStatusCode.OK)]
-        public async Task<ActionResult<BasketCart>> GetBasket(string userName)
+        [HttpGet("{userName}", Name = "GetBasket")]
+        [ProducesResponseType(typeof(ShoppingCart), (int)HttpStatusCode.OK)]
+        public async Task<ActionResult<ShoppingCart>> GetBasket(string userName)
         {
             var basket = await _basketRepository.GetBasket(userName);
-            return Ok(basket?? new BasketCart(userName));
+            return Ok(basket?? new ShoppingCart(userName));
         }
 
         [HttpPost]
-        [ProducesResponseType(typeof(BasketCart), (int)HttpStatusCode.OK)]
-        public async Task<ActionResult<BasketCart>> UpdateBasket([FromBody] BasketCart basket)
+        [ProducesResponseType(typeof(ShoppingCart), (int)HttpStatusCode.OK)]
+        public async Task<ActionResult<ShoppingCart>> UpdateBasket([FromBody] ShoppingCart basket)
         {
   
             return Ok(await _basketRepository.UpdateBasket(basket));
         }
 
         [HttpDelete("{userName}")]
-        [ProducesResponseType(typeof(BasketCart), (int)HttpStatusCode.OK)]
+        [ProducesResponseType(typeof(ShoppingCart), (int)HttpStatusCode.OK)]
         public async Task<IActionResult> DeleteBasket(string userName)
         {
-
-            return Ok(await _basketRepository.DeleteBasket(userName));
+            await _basketRepository.DeleteBasket(userName);
+            return Ok();
         }
 
         [Route("[action]")]
         [HttpPost]
         [ProducesResponseType((int)HttpStatusCode.Accepted)]
-        [ProducesResponseType((int)HttpStatusCode.BadRequest)]
         public async Task<IActionResult> Checkout([FromBody] BasketCheckout basketCheckout)
         {
             var basket = await _basketRepository.GetBasket(basketCheckout.UserName);
             if (basket == null) return BadRequest();
 
-            var removeBasket = await _basketRepository.DeleteBasket(basket.UserName);
-            if (!removeBasket) return BadRequest();
+            await _basketRepository.DeleteBasket(basket.UserName);
+            
 
             //var eventMessage = _mapper.Map<BasketCheckoutEvent>(basketCheckout);
             //eventMessage.RequestId =  Guid.NewGuid();

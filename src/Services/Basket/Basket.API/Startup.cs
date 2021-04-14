@@ -1,16 +1,13 @@
-using Basket.API.Data;
-using Basket.API.Data.Interfaces;
 using Basket.API.Repositories;
-using Basket.API.Repositories.Interfaces;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
+using Microsoft.Extensions.Caching;
+
 using StackExchange.Redis;
-
-
 using Microsoft.AspNetCore.Mvc;
 
 using Microsoft.Extensions.Logging;
@@ -39,14 +36,19 @@ namespace Basket.API
         {
             services.AddControllers();
 
-            services.AddSingleton<ConnectionMultiplexer>(sp =>
+            services.AddStackExchangeRedisCache(options =>
             {
-                var configuration = ConfigurationOptions.Parse(Configuration.GetConnectionString("Redis"), true);
-                return ConnectionMultiplexer.Connect(configuration);
+                options.Configuration = Configuration.GetValue<string>("CacheSettings:ConnectionString");
             });
 
-            services.AddTransient<IBasketContext, BasketContext>();
-            services.AddTransient<IBasketRepository, BasketRepository>();
+            //services.AddSingleton<ConnectionMultiplexer>(sp =>
+            //{
+            //    var configuration = ConfigurationOptions.Parse(Configuration.GetConnectionString("Redis"), true);
+            //    return ConnectionMultiplexer.Connect(configuration);
+            //});
+
+
+            services.AddScoped<IBasketRepository, BasketRepository>();
 
             services.AddSwaggerGen(c =>
             {

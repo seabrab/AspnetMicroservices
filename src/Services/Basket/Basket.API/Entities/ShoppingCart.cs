@@ -3,18 +3,18 @@
 
 namespace Basket.API.Entities
 {
-    public class BasketCart
+    public class ShoppingCart
     {
         public string UserName { get; set; }
 
-        public List<BasketCartItem> Items { get; set; } = new List<BasketCartItem>();
+        public List<ShoppingCartItem> Items { get; set; } = new List<ShoppingCartItem>();
 
-        public BasketCart()
+        public ShoppingCart()
         {
 
         }
 
-        public BasketCart(string userName)
+        public ShoppingCart(string userName)
         {
             UserName = userName;
         }
